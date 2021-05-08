@@ -21,7 +21,7 @@ var Connections map[string]*pb.GameService_ConnectServer
 func (s togetherServer) Connect(req *pb.ConnectRequest, stream pb.GameService_ConnectServer) error {
 	log.Printf("Got ConnectRequest from %s.\n", req.Username)
 
-	err := PlayerList.AddPlayer(req.Username)
+	err := engine.PlayerList.AddPlayer(req.Username)
 
 	if err != nil {
 		return err
@@ -53,9 +53,9 @@ func buildPlayerEvent(username string, player *engine.Player, eventType pb.Playe
 func buildGameState() *pb.GameState {
 	state := &pb.GameState{}
 
-	players := PlayerList.GetPlayers()
+	players := engine.PlayerList.GetPlayers()
 
-	connects, disconnects := PlayerList.GetRecents()
+	connects, disconnects := engine.PlayerList.GetRecents()
 
 	for _, c := range *connects {
 		e := buildPlayerEvent(c, players[c], pb.PlayerEvent_CONNECT)
