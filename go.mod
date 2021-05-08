@@ -3,7 +3,7 @@ module github.com/abeardevil/together-server
 go 1.15
 
 require (
-	github.com/abeardevil/together-engine v0.0.0-20210508184100-deb3a43d5d0a
+	github.com/abeardevil/together-engine v0.0.0-20210508193200-a628eb148b15
 	github.com/faiface/pixel v0.10.0
 	github.com/go-gl/gl v0.0.0-20210501111010-69f74958bac0 // indirect
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20210410170116-ea3d685f79fb // indirect

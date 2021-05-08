@@ -6,6 +6,7 @@ import (
 
 	engine "github.com/abeardevil/together-engine"
 	"github.com/abeardevil/together-engine/pb"
+	"github.com/faiface/pixel"
 	"google.golang.org/grpc"
 )
 
@@ -15,21 +16,24 @@ type togetherServer struct {
 
 var GRPCServer togetherServer
 
-// Maps username to the user's connection.
-var Connections map[string]*pb.GameService_ConnectServer
-
-func (s togetherServer) Connect(req *pb.ConnectRequest, stream pb.GameService_ConnectServer) error {
+func (s togetherServer) Connect(req *pb.ConnectRequest, conn pb.GameService_ConnectServer) error {
 	log.Printf("Got ConnectRequest from %s.\n", req.Username)
 
-	err := engine.PlayerList.AddPlayer(req.Username)
+	err := engine.PlayerList.AddPlayer(req.Username, engine.NewPlayer(pixel.Vec{}, engine.PlayerSpeed, engine.PlayerAcceleration, engine.DefaultCharacterSprite))
 
 	if err != nil {
 		return err
 	}
 
-	stream.Send(buildGameState())
+	Conns.Add(req.Username, conn)
+
+	broadcastGameState()
 
 	return nil
+}
+
+func broadcastGameState() {
+	Conns.Broadcast(buildGameState())
 }
 
 func buildPlayerEvent(username string, player *engine.Player, eventType pb.PlayerEvent_EventType) *pb.PlayerEvent {
@@ -55,7 +59,7 @@ func buildGameState() *pb.GameState {
 
 	players := engine.PlayerList.GetPlayers()
 
-	connects, disconnects := engine.PlayerList.GetRecents()
+	connects, disconnects, updates := engine.PlayerList.GetRecents()
 
 	for _, c := range *connects {
 		e := buildPlayerEvent(c, players[c], pb.PlayerEvent_CONNECT)
@@ -67,8 +71,8 @@ func buildGameState() *pb.GameState {
 		state.Players = append(state.Players, e)
 	}
 
-	for username, player := range players {
-		if stringInSlice(username, connects) || stringInSlice(username, disconnects) {
+	for _, u := range *updates {
+		if stringInSlice(u, connects) || stringInSlice(u, disconnects) {
 			/*
 				This player just connected or disconnected, so we've already covered
 				them in the previous loops.
@@ -77,7 +81,7 @@ func buildGameState() *pb.GameState {
 			break
 		}
 
-		e := buildPlayerEvent(username, player, pb.PlayerEvent_UPDATE)
+		e := buildPlayerEvent(u, players[u], pb.PlayerEvent_UPDATE)
 		state.Players = append(state.Players, e)
 	}
 
