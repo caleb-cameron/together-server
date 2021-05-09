@@ -148,7 +148,7 @@ func buildGameState() *pb.GameState {
 func startServer() {
 	log.Println("Starting GRPC server...")
 
-	lis, err := net.Listen("tcp", "localhost:9000")
+	lis, err := net.Listen("tcp", "0.0.0.0:9000")
 
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
