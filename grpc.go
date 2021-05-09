@@ -115,7 +115,6 @@ func buildGameState() *pb.GameState {
 
 	for _, c := range *connects {
 		e := buildPlayerEvent(c, players[c], pb.PlayerEvent_CONNECT)
-		log.Printf("Found a new connection for gamestate build: %+v\n", e)
 		state.Players = append(state.Players, e)
 	}
 
@@ -131,12 +130,17 @@ func buildGameState() *pb.GameState {
 				them in the previous loops.
 			*/
 
-			break
+			continue
 		}
 
 		e := buildPlayerEvent(u, players[u], pb.PlayerEvent_UPDATE)
 		state.Players = append(state.Players, e)
 	}
+
+	// log.Printf("Players in update: %+v\n", state.Players)
+	// log.Printf("Connects: %+v\n", *connects)
+	// log.Printf("Disconnects: %v\n", *disconnects)
+	// log.Printf("Updates: %v\n", *updates)
 
 	return state
 }
