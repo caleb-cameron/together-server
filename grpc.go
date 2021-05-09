@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -152,7 +153,7 @@ func buildGameState() *pb.GameState {
 func startServer() {
 	log.Println("Starting GRPC server...")
 
-	lis, err := net.Listen("tcp", "0.0.0.0:9000")
+	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%s", config.ListenAddress, config.ListenPort))
 
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)

@@ -6,6 +6,8 @@ import (
 )
 
 func main() {
+	initConfigs()
+	initServer()
 	go updateLoop()
 	startServer()
 }

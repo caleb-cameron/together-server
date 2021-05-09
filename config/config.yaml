@@ -1,0 +1,11 @@
+#WorldSeed: myseed123
+
+ListenAddress: 0.0.0.0
+ListenPort: 9000
+
+DataDir: data/
+ChunksDir: data/chunks/
+ChunkSize: 10
+
+WorldMaxAltitude: 30
+ChunkLoadRadius: 1
