@@ -33,8 +33,11 @@ func (s togetherServer) Connect(req *pb.ConnectRequest, conn pb.GameService_Conn
 	)
 
 	if err != nil {
+		log.Println(err)
 		return err
 	}
+
+	log.Printf("New player list: %+v\n", engine.PlayerList.GetPlayers())
 
 	doneChan := make(chan bool)
 
@@ -47,7 +50,6 @@ func (s togetherServer) Connect(req *pb.ConnectRequest, conn pb.GameService_Conn
 	for {
 		select {
 		case <-doneChan:
-			log.Printf("Closing stream for user %s", req.Username)
 			return nil
 		}
 	}
@@ -90,18 +92,20 @@ func buildPlayerEvent(username string, player *engine.Player, eventType pb.Playe
 
 	e.Username = username
 	e.Type = eventType
-	e.Position = &pb.PlayerPosition{}
+	if player != nil {
+		e.Position = &pb.PlayerPosition{}
 
-	playerPos := player.GetPosition()
-	playerVel := player.GetVelocity()
+		playerPos := player.GetPosition()
+		playerVel := player.GetVelocity()
 
-	e.Position.Position = &pb.Vector{}
-	e.Position.Position.X = float32(playerPos.X)
-	e.Position.Position.Y = float32(playerPos.Y)
+		e.Position.Position = &pb.Vector{}
+		e.Position.Position.X = float32(playerPos.X)
+		e.Position.Position.Y = float32(playerPos.Y)
 
-	e.Position.Velocity = &pb.Vector{}
-	e.Position.Velocity.X = float32(playerVel.X)
-	e.Position.Velocity.Y = float32(playerVel.Y)
+		e.Position.Velocity = &pb.Vector{}
+		e.Position.Velocity.X = float32(playerVel.X)
+		e.Position.Velocity.Y = float32(playerVel.Y)
+	}
 
 	return &e
 }

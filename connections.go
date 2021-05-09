@@ -2,9 +2,12 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"sync"
+	"time"
 
+	engine "github.com/abeardevil/together-engine"
 	"github.com/abeardevil/together-engine/pb"
 )
 
@@ -40,6 +43,12 @@ func (c *Connections) Get(username string) pb.GameService_ConnectServer {
 	return c.conns[username]
 }
 
+func (c *Connections) Ping(username string) error {
+	conn := c.Get(username)
+
+	return conn.Send(&pb.GameState{})
+}
+
 func (c *Connections) Remove(username string) bool {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -47,6 +56,9 @@ func (c *Connections) Remove(username string) bool {
 	if _, ok := c.conns[username]; !ok {
 		return false
 	}
+
+	log.Printf("Closing stream for user %s", username)
+	engine.PlayerList.RemovePlayer(username)
 
 	delete(c.conns, username)
 
@@ -56,6 +68,27 @@ func (c *Connections) Remove(username string) bool {
 	}
 
 	return true
+}
+
+/*
+	Monitor a connection, pinging regularly. If the connection dies,
+	remove it from the list.
+*/
+func (c *Connections) Babysit(username string) {
+	pingTimer := time.Tick(time.Second)
+
+	for {
+		select {
+		case <-pingTimer:
+			err := c.Ping(username)
+			if err != nil && err != io.EOF {
+				fmt.Printf("Closing stream for player %s: %v\n", username, err)
+				c.Remove(username)
+				return
+			}
+		}
+	}
+
 }
 
 func (c *Connections) Add(username string, conn pb.GameService_ConnectServer, doneChan chan bool) error {
@@ -74,6 +107,8 @@ func (c *Connections) Add(username string, conn pb.GameService_ConnectServer, do
 	}
 
 	c.doneChans[username] = doneChan
+
+	go c.Babysit(username)
 
 	return nil
 }
