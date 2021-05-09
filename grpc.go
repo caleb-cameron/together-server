@@ -1,13 +1,16 @@
 package main
 
 import (
+	"io"
 	"log"
 	"net"
+	"time"
 
 	engine "github.com/abeardevil/together-engine"
 	"github.com/abeardevil/together-engine/pb"
 	"github.com/faiface/pixel"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/keepalive"
 )
 
 type togetherServer struct {
@@ -17,29 +20,70 @@ type togetherServer struct {
 var GRPCServer togetherServer
 
 func (s togetherServer) Connect(req *pb.ConnectRequest, conn pb.GameService_ConnectServer) error {
-	log.Printf("Got ConnectRequest from %s.\n", req.Username)
+	log.Printf("Player connecting: %s.\n", req.Username)
 
-	err := engine.PlayerList.AddPlayer(req.Username, engine.NewPlayer(pixel.Vec{}, engine.PlayerSpeed, engine.PlayerAcceleration, engine.DefaultCharacterSprite))
+	err := engine.PlayerList.AddPlayer(req.Username, engine.NewPlayer(req.Username, pixel.Vec{}, engine.PlayerSpeed, engine.PlayerAcceleration, engine.DefaultCharacterSprite))
 
 	if err != nil {
 		return err
 	}
 
-	Conns.Add(req.Username, conn)
+	doneChan := make(chan bool)
 
-	broadcastGameState()
+	err = Conns.Add(req.Username, conn, doneChan)
 
-	return nil
+	if err != nil {
+		return err
+	}
+
+	for {
+		select {
+		case <-doneChan:
+			log.Printf("Closing stream for user %s", req.Username)
+			return nil
+		}
+	}
+}
+
+func (s togetherServer) SendPlayerUpdates(stream pb.GameService_SendPlayerUpdatesServer) error {
+	for {
+		update, err := stream.Recv()
+
+		if err == io.EOF {
+			return nil
+		} else if err != nil {
+			log.Printf("Error receiving player update: %v\n", err)
+			return err
+		}
+
+		log.Printf("Received update from player %s\n", update.Username)
+
+		err = engine.PlayerList.UpdatePlayer(update.Username, engine.PlayerFromProto(update))
+
+		if err != nil {
+			log.Printf("Error applying player update: %v\n", err)
+			return err
+		}
+	}
 }
 
 func broadcastGameState() {
-	Conns.Broadcast(buildGameState())
+	gs := buildGameState()
+
+	if len(gs.Players) == 0 {
+		return
+	}
+
+	Conns.Broadcast(gs)
 }
 
 func buildPlayerEvent(username string, player *engine.Player, eventType pb.PlayerEvent_EventType) *pb.PlayerEvent {
 	e := pb.PlayerEvent{}
-	e.Type = pb.PlayerEvent_CONNECT
+
+	e.Username = username
+	e.Type = eventType
 	e.Position = &pb.PlayerPosition{}
+
 	playerPos := player.GetPosition()
 	playerVel := player.GetVelocity()
 
@@ -63,6 +107,7 @@ func buildGameState() *pb.GameState {
 
 	for _, c := range *connects {
 		e := buildPlayerEvent(c, players[c], pb.PlayerEvent_CONNECT)
+		log.Printf("Found a new connection for gamestate build: %+v\n", e)
 		state.Players = append(state.Players, e)
 	}
 
@@ -97,11 +142,30 @@ func startServer() {
 		log.Fatalf("Failed to listen: %v", err)
 	}
 
-	var opts []grpc.ServerOption
-
+	opts := configureGrpcOpts()
 	grpcServer := grpc.NewServer(opts...)
 
 	pb.RegisterGameServiceServer(grpcServer, GRPCServer)
 
 	grpcServer.Serve(lis)
+}
+
+func configureGrpcOpts() []grpc.ServerOption {
+	opts := []grpc.ServerOption{}
+
+	kaep := keepalive.EnforcementPolicy{
+		MinTime:             time.Second / 2.0, // Minimum time between pings
+		PermitWithoutStream: true,              // Permit pings even when there is no active stream
+	}
+	opts = append(opts, grpc.KeepaliveEnforcementPolicy(kaep))
+
+	kasp := keepalive.ServerParameters{
+		MaxConnectionIdle:     15 * time.Second, // If a client is idle for 15 seconds, send a GOAWAY
+		MaxConnectionAgeGrace: 5 * time.Second,  // Allow 5 seconds for pending RPCs to complete before forcibly closing connections.
+		Time:                  5 * time.Second,  // Ping the client if it is still idle for 5 seconds to ensure the connection is still active.
+		Timeout:               1 * time.Second,  // Wait 1 second for the ping ack before assuming the connection is dead.
+	}
+	opts = append(opts, grpc.KeepaliveParams(kasp))
+
+	return opts
 }

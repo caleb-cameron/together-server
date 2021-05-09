@@ -10,14 +10,23 @@ import (
 
 // Maps username to the user's connection.
 type Connections struct {
-	conns map[string]pb.GameService_ConnectServer
-	mutex sync.RWMutex
+	conns     map[string]pb.GameService_ConnectServer
+	doneChans map[string]chan bool
+	mutex     sync.RWMutex
 }
 
 var Conns *Connections
 
 func init() {
-	Conns = &Connections{}
+	Conns = NewConnections()
+}
+
+func NewConnections() *Connections {
+	return &Connections{
+		conns:     map[string]pb.GameService_ConnectServer{},
+		doneChans: map[string]chan bool{},
+		mutex:     sync.RWMutex{},
+	}
 }
 
 func (c *Connections) Get(username string) pb.GameService_ConnectServer {
@@ -41,10 +50,15 @@ func (c *Connections) Remove(username string) bool {
 
 	delete(c.conns, username)
 
+	if _, ok := c.doneChans[username]; ok {
+		c.doneChans[username] <- true
+		delete(c.doneChans, username)
+	}
+
 	return true
 }
 
-func (c *Connections) Add(username string, conn pb.GameService_ConnectServer) error {
+func (c *Connections) Add(username string, conn pb.GameService_ConnectServer, doneChan chan bool) error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
@@ -54,6 +68,13 @@ func (c *Connections) Add(username string, conn pb.GameService_ConnectServer) er
 
 	c.conns[username] = conn
 
+	if _, ok := c.doneChans[username]; ok {
+		c.doneChans[username] <- true
+		delete(c.doneChans, username)
+	}
+
+	c.doneChans[username] = doneChan
+
 	return nil
 }
 
@@ -62,7 +83,10 @@ func (c *Connections) Broadcast(event *pb.GameState) {
 	defer c.mutex.RUnlock()
 
 	for username, conn := range c.conns {
-		conn.Send(event)
-		log.Printf("Sent game update to %s", username)
+		err := conn.Send(event)
+		if err != nil {
+			log.Printf("Error sending update to %s: %v", username, err)
+			defer c.Remove(username)
+		}
 	}
 }
