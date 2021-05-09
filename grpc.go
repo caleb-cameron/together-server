@@ -56,7 +56,7 @@ func (s togetherServer) SendPlayerUpdates(stream pb.GameService_SendPlayerUpdate
 			return err
 		}
 
-		log.Printf("Received update from player %s\n", update.Username)
+		// log.Printf("Received update from player %s\n", update.Username)
 
 		err = engine.PlayerList.UpdatePlayer(update.Username, engine.PlayerFromProto(update))
 
