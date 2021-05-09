@@ -22,7 +22,15 @@ var GRPCServer togetherServer
 func (s togetherServer) Connect(req *pb.ConnectRequest, conn pb.GameService_ConnectServer) error {
 	log.Printf("Player connecting: %s.\n", req.Username)
 
-	err := engine.PlayerList.AddPlayer(req.Username, engine.NewPlayer(req.Username, pixel.Vec{}, engine.PlayerSpeed, engine.PlayerAcceleration, engine.DefaultCharacterSprite))
+	err := engine.PlayerList.AddPlayer(
+		req.Username,
+		engine.NewPlayer(req.Username,
+			pixel.Vec{},
+			engine.PlayerSpeed,
+			engine.PlayerAcceleration,
+			engine.DefaultCharacterSprite,
+		),
+	)
 
 	if err != nil {
 		return err
