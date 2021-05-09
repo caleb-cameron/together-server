@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log"
@@ -148,6 +149,27 @@ func buildGameState() *pb.GameState {
 	// log.Printf("Updates: %v\n", *updates)
 
 	return state
+}
+
+func (s togetherServer) LoadChunk(ctx context.Context, vec *pb.Vector) (*pb.Chunk, error) {
+	chunkX := int(vec.X)
+	chunkY := int(vec.Y)
+
+	log.Printf("Got a LoadChunk request for chunk (%d,%d)\n", chunkX, chunkY)
+
+	chunk := engine.GWorld.GetChunk(chunkX, chunkY)
+	b, err := chunk.Encode()
+
+	if err != nil {
+		log.Printf("Failed to load chunk (%d,%d): %v", chunkX, chunkY, err)
+		return nil, err
+	}
+
+	resp := pb.Chunk{}
+	resp.Coordinates = &pb.Vector{X: float32(chunkX), Y: float32(chunkY)}
+	resp.ChunkData = b
+
+	return &resp, nil
 }
 
 func startServer() {
