@@ -19,6 +19,7 @@ type Config struct {
 
 	WorldMaxAltitude int
 	ChunkLoadRadius  float64
+	ChunkLoadPadding float64
 }
 
 var config Config
@@ -28,6 +29,7 @@ func initConfigs() {
 	viper.SetConfigType("yaml")
 
 	viper.AddConfigPath("./config")
+	viper.AddConfigPath("../together-server/config")
 	viper.AddConfigPath("/etc/together/")
 
 	err := viper.ReadInConfig()
@@ -52,6 +54,10 @@ func initConfigs() {
 
 	if config.ChunkLoadRadius != 0 {
 		engine.ChunkLoadRadius = config.ChunkLoadRadius
+	}
+
+	if config.ChunkLoadPadding != 0 {
+		engine.ChunkLoadPadding = config.ChunkLoadPadding
 	}
 
 	if config.ChunkSize != 0 {

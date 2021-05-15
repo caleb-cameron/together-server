@@ -10,6 +10,7 @@ import (
 )
 
 func initServer() {
+	engine.InitTiles()
 	engine.GWorld = engine.World{}
 	engine.GWorld.Init()
 

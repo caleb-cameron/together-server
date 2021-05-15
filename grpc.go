@@ -158,6 +158,12 @@ func (s togetherServer) LoadChunk(ctx context.Context, vec *pb.Vector) (*pb.Chun
 	log.Printf("Got a LoadChunk request for chunk (%d,%d)\n", chunkX, chunkY)
 
 	chunk := engine.GWorld.GetChunk(chunkX, chunkY)
+
+	if chunk == nil {
+		engine.GWorld.LoadOrCreateChunk(chunkX, chunkY)
+		chunk = engine.GWorld.GetChunk(chunkX, chunkY)
+	}
+
 	b, err := chunk.Encode()
 
 	if err != nil {

@@ -5,7 +5,8 @@ ListenPort: 9000
 
 DataDir: data/
 ChunksDir: data/chunks/
-ChunkSize: 10
+ChunkSize: 30
 
 WorldMaxAltitude: 30
 ChunkLoadRadius: 1
+ChunkLoadPadding: 2
