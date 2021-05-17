@@ -3,8 +3,9 @@ module github.com/abeardevil/together-server
 go 1.15
 
 require (
-	github.com/abeardevil/together-engine v0.0.0-20210516212906-c1acc8fc979d
+	github.com/abeardevil/together-engine v0.0.0-20210517191859-d75bc1364bd2
 	github.com/aquilax/go-perlin v1.0.0
+	github.com/dgraph-io/badger/v3 v3.2011.1
 	github.com/faiface/pixel v0.10.0
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/go-gl/gl v0.0.0-20210501111010-69f74958bac0 // indirect
@@ -21,7 +22,6 @@ require (
 	github.com/spf13/viper v1.7.1
 	golang.org/x/net v0.0.0-20210510120150-4163338589ed // indirect
 	golang.org/x/sys v0.0.0-20210514084401-e8d321eab015 // indirect
-	google.golang.org/genproto v0.0.0-20210513213006-bf773b8c8384 // indirect
 	google.golang.org/grpc v1.37.1
 	gopkg.in/ini.v1 v1.62.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

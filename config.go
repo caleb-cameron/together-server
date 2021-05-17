@@ -15,6 +15,7 @@ type Config struct {
 
 	DataDir   string
 	ChunksDir string
+	BadgerDir string
 	ChunkSize int
 
 	WorldMaxAltitude int

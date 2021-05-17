@@ -6,6 +6,7 @@ ListenPort: 9000
 DataDir: data/
 ChunksDir: data/chunks/
 ChunkSize: 30
+BadgerDir: data/badger/
 
 WorldMaxAltitude: 30
 ChunkLoadRadius: 1
