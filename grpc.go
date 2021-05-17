@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -20,6 +21,11 @@ type togetherServer struct {
 }
 
 var GRPCServer togetherServer
+var TileUpdateQueue *engine.ConcurrentQueue
+
+func init() {
+	TileUpdateQueue = engine.NewConcurrentQueue()
+}
 
 func (s togetherServer) Connect(req *pb.ConnectRequest, conn pb.GameService_ConnectServer) error {
 	log.Printf("Player connecting: %s.\n", req.Username)
@@ -68,8 +74,6 @@ func (s togetherServer) SendPlayerUpdates(stream pb.GameService_SendPlayerUpdate
 			return err
 		}
 
-		// log.Printf("Received update from player %s\n", update.Username)
-
 		err = engine.PlayerList.UpdatePlayer(update.Username, engine.PlayerFromProto(update))
 
 		if err != nil {
@@ -82,7 +86,7 @@ func (s togetherServer) SendPlayerUpdates(stream pb.GameService_SendPlayerUpdate
 func broadcastGameState() {
 	gs := buildGameState()
 
-	if len(gs.Players) == 0 {
+	if len(gs.Players) == 0 && len(gs.TileUpdates) == 0 {
 		return
 	}
 
@@ -136,17 +140,18 @@ func buildGameState() *pb.GameState {
 				them in the previous loops.
 			*/
 
-			continue
+			// continue
 		}
 
 		e := buildPlayerEvent(u, players[u], pb.PlayerEvent_UPDATE)
 		state.Players = append(state.Players, e)
 	}
 
-	// log.Printf("Players in update: %+v\n", state.Players)
-	// log.Printf("Connects: %+v\n", *connects)
-	// log.Printf("Disconnects: %v\n", *disconnects)
-	// log.Printf("Updates: %v\n", *updates)
+	state.TileUpdates = []*pb.TileUpdate{}
+
+	for tu := range TileUpdateQueue.Iter() {
+		state.TileUpdates = append(state.TileUpdates, tu.Value.(*pb.TileUpdate))
+	}
 
 	return state
 }
@@ -176,6 +181,33 @@ func (s togetherServer) LoadChunk(ctx context.Context, vec *pb.Vector) (*pb.Chun
 	resp.ChunkData = b
 
 	return &resp, nil
+}
+
+func (s togetherServer) UpdateTile(ctx context.Context, tu *pb.TileUpdate) (*pb.Ack, error) {
+	chunkX := int(tu.ChunkCoordinates.X)
+	chunkY := int(tu.ChunkCoordinates.Y)
+	tileX := int(tu.TileCoordinates.X)
+	tileY := int(tu.TileCoordinates.Y)
+
+	log.Printf("Got tile update: %+v", tu)
+
+	c := engine.GWorld.GetChunk(chunkX, chunkY)
+
+	if c == nil {
+		return nil, errors.New(fmt.Sprintf("Tried to update nil chunk: %d, %d", chunkX, chunkY))
+	}
+
+	tile := engine.DeserializeTile(tu.TileData)
+	tile.Chunk = c
+
+	log.Printf("Deserialized tile: %+v", tile)
+
+	c.ReplaceTile(tileX, tileY, tile)
+	c.PersistToDisk()
+
+	TileUpdateQueue.Push(tu)
+
+	return &pb.Ack{}, nil
 }
 
 func startServer() {

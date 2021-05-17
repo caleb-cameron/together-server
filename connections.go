@@ -122,6 +122,9 @@ func (c *Connections) Broadcast(event *pb.GameState) {
 		if err != nil {
 			log.Printf("Error sending update to %s: %v", username, err)
 			defer c.Remove(username)
+			continue
 		}
+
+		log.Printf("Sent state to %s: %+v", username, event)
 	}
 }
