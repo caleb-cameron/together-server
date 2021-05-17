@@ -27,12 +27,98 @@ func init() {
 	TileUpdateQueue = engine.NewConcurrentQueue()
 }
 
-func (s togetherServer) Connect(req *pb.ConnectRequest, conn pb.GameService_ConnectServer) error {
-	log.Printf("Player connecting: %s.\n", req.Username)
+func (s togetherServer) Register(ctx context.Context, req *pb.UserRegistration) (*pb.LoginResponse, error) {
+	if req.Username == "" || req.Password == "" || req.Email == "" {
+		return nil, errors.New("Username, password and email required")
+	}
 
-	err := engine.PlayerList.AddPlayer(
-		req.Username,
-		engine.NewPlayer(req.Username,
+	user, err := NewUserAccount(req.Username, req.Password, req.Email)
+
+	if err != nil {
+		if err == ErrUsernameTaken {
+			log.Printf("User registration failed because username %s is taken.", req.Username)
+		}
+
+		log.Printf("User registration failed: %v", err)
+		return nil, err
+	}
+
+	if user == nil {
+		log.Printf("User registration produced nil user: %v", err)
+		return nil, errors.New("User registration produced nil user.")
+	}
+
+	token, err := user.GenerateToken()
+	resp := pb.LoginResponse{
+		Username: req.Username,
+		Token:    token,
+		Success:  true,
+	}
+
+	if err != nil || token == "" {
+		err = fmt.Errorf("User registration succeeded but failed to create a JWT token: %v", err)
+		resp.Error = "Login succeeded but failed to create a token -- please report this error."
+		return &resp, err
+	}
+
+	return &resp, nil
+}
+
+func (s togetherServer) Login(ctx context.Context, req *pb.UserLogin) (*pb.LoginResponse, error) {
+	if req.Username == "" || req.Password == "" {
+		return nil, errors.New("Username and password required.")
+	}
+
+	user, err := Login(req.Username, req.Password)
+
+	if err != nil {
+		if err == ErrUserDoesNotExist {
+			log.Printf("User login failed because user %s does not exist.", req.Username)
+		}
+
+		log.Printf("User login failed: %v", err)
+		return nil, err
+	}
+
+	resp := pb.LoginResponse{
+		Username: req.Username,
+	}
+
+	if user == nil {
+		resp.Success = false
+		resp.Error = "Invalid username or password"
+		return &resp, nil
+	}
+
+	token, err := user.GenerateToken()
+
+	if err != nil || token == "" {
+		err = fmt.Errorf("User login succeeded but failed to create a JWT token: %v", err)
+		log.Println(err)
+		resp.Error = err.Error()
+		return &resp, err
+	}
+
+	resp.Token = token
+
+	return &resp, nil
+}
+
+func (s togetherServer) Connect(req *pb.ConnectRequest, conn pb.GameService_ConnectServer) error {
+	if req.Token == "" {
+		return errors.New("No auth token provided in connect request")
+	}
+
+	user, err := GetUserByToken(req.Token)
+
+	if err != nil || user == nil {
+		log.Printf("User connect failed: bad token: %v", err)
+		return err
+	}
+
+	err = engine.PlayerList.AddPlayer(
+		user.Username,
+		engine.NewPlayer(user.Username,
 			pixel.Vec{},
 			engine.PlayerSpeed,
 			engine.PlayerAcceleration,
@@ -49,7 +135,7 @@ func (s togetherServer) Connect(req *pb.ConnectRequest, conn pb.GameService_Conn
 
 	doneChan := make(chan bool)
 
-	err = Conns.Add(req.Username, conn, doneChan)
+	err = Conns.Add(user.Username, conn, doneChan)
 
 	if err != nil {
 		return err

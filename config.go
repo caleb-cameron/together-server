@@ -21,6 +21,8 @@ type Config struct {
 	WorldMaxAltitude int
 	ChunkLoadRadius  float64
 	ChunkLoadPadding float64
+
+	AuthTokenKey string
 }
 
 var config Config

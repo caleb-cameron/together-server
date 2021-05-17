@@ -11,3 +11,5 @@ BadgerDir: data/badger/
 WorldMaxAltitude: 30
 ChunkLoadRadius: 1
 ChunkLoadPadding: 2
+
+AuthTokenKey: ChangeMe123!
