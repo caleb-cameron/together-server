@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	engine "github.com/abeardevil/together-engine"
-	"github.com/abeardevil/together-engine/pb"
+	engine "github.com/caleb-cameron/together-engine"
+	"github.com/caleb-cameron/together-engine/pb"
 )
 
 // Maps username to the user's connection.

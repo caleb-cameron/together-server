@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"time"
 
-	engine "github.com/abeardevil/together-engine"
 	perlin "github.com/aquilax/go-perlin"
+	engine "github.com/caleb-cameron/together-engine"
 )
 
 func initServer() {

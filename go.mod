@@ -1,10 +1,10 @@
-module github.com/abeardevil/together-server
+module github.com/caleb-cameron/together-server
 
 go 1.15
 
 require (
 	github.com/DataDog/zstd v1.4.8 // indirect
-	github.com/abeardevil/together-engine v0.0.0-20210517214305-edfe3313e279
+	github.com/caleb-cameron/together-engine v0.0.0-20210517214305-edfe3313e279
 	github.com/aquilax/go-perlin v1.0.0
 	github.com/dgraph-io/badger/v3 v3.2011.1
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
