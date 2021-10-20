@@ -105,20 +105,22 @@ func (s togetherServer) Login(ctx context.Context, req *pb.UserLogin) (*pb.Login
 }
 
 func (s togetherServer) Connect(req *pb.ConnectRequest, conn pb.GameService_ConnectServer) error {
-	if req.Token == "" {
-		return errors.New("No auth token provided in connect request")
-	}
+	var err error
+	// Turn off auth for now.
+	// if req.Token == "" {
+	// 	return errors.New("No auth token provided in connect request")
+	// }
 
-	user, err := GetUserByToken(req.Token)
+	// user, err := GetUserByToken(req.Token)
 
-	if err != nil || user == nil {
-		log.Printf("User connect failed: bad token: %v", err)
-		return err
-	}
+	// if err != nil || user == nil {
+	// 	log.Printf("User connect failed: bad token: %v", err)
+	// 	return err
+	// }
 
 	err = engine.PlayerList.AddPlayer(
-		user.Username,
-		engine.NewPlayer(user.Username,
+		req.Username,
+		engine.NewPlayer(req.Username,
 			pixel.Vec{},
 			engine.PlayerSpeed,
 			engine.PlayerAcceleration,
@@ -135,7 +137,7 @@ func (s togetherServer) Connect(req *pb.ConnectRequest, conn pb.GameService_Conn
 
 	doneChan := make(chan bool)
 
-	err = Conns.Add(user.Username, conn, doneChan)
+	err = Conns.Add(req.Username, conn, doneChan)
 
 	if err != nil {
 		return err

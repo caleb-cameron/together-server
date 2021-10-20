@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/aquilax/go-perlin v1.1.0
-	github.com/caleb-cameron/together-engine v0.0.0-20211002200811-b3c23f4c9f27
+	github.com/caleb-cameron/together-engine v0.0.0-20211020191422-747df495da33
 	github.com/dgraph-io/badger/v3 v3.2103.1
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/faiface/pixel v0.10.0
@@ -38,10 +38,10 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	golang.org/x/net v0.0.0-20210510120150-4163338589ed // indirect
-	golang.org/x/sys v0.0.0-20210823070655-63515b42dcdf // indirect
-	golang.org/x/text v0.3.6 // indirect
-	google.golang.org/genproto v0.0.0-20210828152312-66f60bf46e71 // indirect
+	golang.org/x/net v0.0.0-20211020060615-d418f374d309 // indirect
+	golang.org/x/sys v0.0.0-20211020174200-9d6173849985 // indirect
+	golang.org/x/text v0.3.7 // indirect
+	google.golang.org/genproto v0.0.0-20211020151524-b7c3a969101a // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/ini.v1 v1.63.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
